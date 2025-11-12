@@ -769,10 +769,17 @@
         }
 
         // 선수 생성
-        function createPlayers(formation) {
+        async function createPlayers(formation) {
             const field = document.getElementById('field');
             // 기존 선수 제거
             document.querySelectorAll('.player').forEach(p => p.remove());
+            
+            // 기존 선수 데이터 백업
+            const oldPlayers = {};
+            players.forEach(p => {
+                oldPlayers[p.position] = p.name;
+            });
+            
             players = [];
 
             const positions = formationData[formation];
@@ -809,17 +816,53 @@
                 });
 
                 field.appendChild(player);
+                
+                // 기존 데이터 또는 빈 문자열로 초기화
+                const existingName = oldPlayers[posData.pos] || '';
                 players.push({
                     element: player,
                     position: posData.pos,
-                    name: ''
+                    name: existingName
                 });
+                
+                // 기존 이름이 있으면 표시
+                if (existingName) {
+                    const nameElement = player.querySelector('.player-name');
+                    nameElement.textContent = existingName;
+                }
             });
             
             // 선수 생성 후 현재 선택된 텍스트 크기 적용
             const textSizeSelect = document.getElementById('textSizeSelect');
             if (textSizeSelect) {
                 applyTextSize(textSizeSelect.value);
+            }
+            
+            // Firebase에서 최신 데이터 가져오기
+            await syncWithFirebase();
+        }
+        
+        // Firebase와 동기화
+        async function syncWithFirebase() {
+            try {
+                const lineupRef = ref(database, 'lineup');
+                const snapshot = await get(lineupRef);
+                const data = snapshot.val();
+                
+                if (data) {
+                    players.forEach(playerData => {
+                        const dbName = data[playerData.position];
+                        if (dbName !== undefined) {
+                            playerData.name = dbName;
+                            const nameElement = playerData.element.querySelector('.player-name');
+                            if (nameElement) {
+                                nameElement.textContent = dbName;
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Firebase 동기화 실패:', error);
             }
         }
 
@@ -889,7 +932,7 @@
                 const field = document.getElementById('field');
                 
                 // html-to-image 라이브러리를 동적으로 로드
-                if (typeof htmlToImage === 'undefined') {
+                if (typeof window.htmlToImage === 'undefined') {
                     const script = document.createElement('script');
                     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js';
                     document.head.appendChild(script);
@@ -898,43 +941,57 @@
                         script.onload = resolve;
                         script.onerror = reject;
                     });
+                    
+                    // 라이브러리 로드 후 약간 대기
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 
-                // 필드를 blob으로 변환 (html-to-image는 스타일을 자동으로 정확히 캡처)
-                const blob = await htmlToImage.toBlob(field, {
+                // 필드를 blob으로 변환
+                const blob = await window.htmlToImage.toBlob(field, {
                     pixelRatio: 3, // 고해상도
                     backgroundColor: '#4a7c59'
                 });
                 
                 try {
                     // 1. 클립보드 복사 시도 (이미지)
-                    if (!navigator.clipboard || !navigator.clipboard.write) {
-                        throw new Error('Clipboard API 미지원');
+                    if (navigator.clipboard && navigator.clipboard.write) {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]);
+                        alert('✅ 포메이션이 클립보드에 복사되었습니다!\n\n붙여넣기(Ctrl+V 또는 길게 누르고 붙여넣기)로 사용하세요.');
+                        return;
                     }
-
-                    await navigator.clipboard.write([
-                        new ClipboardItem({ 'image/png': blob })
-                    ]);
-
-                    alert('✅ 포메이션이 클립보드에 복사되었습니다!\n\n붙여넣기(Ctrl+V 또는 길게 누르고 붙여넣기)로 사용하세요.');
                 } catch (err) {
                     console.warn('클립보드 복사 실패:', err);
-
-                    // 2. 모바일 공유 API 지원 시 → 공유로 폴백
-                    if (navigator.share) {
+                }
+                
+                // 2. 모바일 공유 API 지원 시 → 공유로 폴백
+                if (navigator.share) {
+                    try {
                         const file = new File([blob], `formation-${Date.now()}.png`, { type: 'image/png' });
                         await navigator.share({
                             files: [file],
                             title: 'Formation Image',
                             text: '포메이션 이미지'
                         });
-                        return; // 공유 성공 시 종료
+                        return;
+                    } catch (shareErr) {
+                        console.warn('공유 실패:', shareErr);
                     }
                 }
                 
+                // 3. 둘 다 실패하면 다운로드
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `formation-${Date.now()}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('✅ 포메이션 이미지가 다운로드되었습니다!');
+                
             } catch (error) {
                 console.error('포메이션 저장 실패:', error);
-                alert('❌ 포메이션 저장에 실패했습니다.\n다시 시도해주세요.');
+                alert('❌ 포메이션 저장에 실패했습니다.\n' + error.message);
             }
         }
         window.saveFormation = saveFormation;
