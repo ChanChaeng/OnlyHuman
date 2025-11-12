@@ -590,8 +590,8 @@
                 { pos: 'CB', x: 0.65, y: 0.75 },
                 { pos: 'RB', x: 0.88, y: 0.70 },
                 { pos: 'CDM', x: 0.50, y: 0.58 },
-                { pos: 'LCM', x: 0.25, y: 0.41 },
-                { pos: 'RCM', x: 0.75, y: 0.41 },
+                { pos: 'CM', x: 0.25, y: 0.41 },
+                { pos: 'CM', x: 0.75, y: 0.41 },
                 { pos: 'LW', x: 0.12, y: 0.20 },
                 { pos: 'ST', x: 0.50, y: 0.15 },
                 { pos: 'RW', x: 0.88, y: 0.20 }
@@ -631,19 +631,31 @@
             
             onValue(lineupRef, (snapshot) => {
                 const data = snapshot.val();
-                if (data) {
-                    // Firebase 데이터를 화면에 반영
+                
+                // 데이터가 없으면 모든 선수 이름 초기화
+                if (!data) {
                     players.forEach(playerData => {
-                        const dbName = data[playerData.position];
-                        if (dbName !== undefined) {
-                            playerData.name = dbName || '';
-                            const nameElement = playerData.element.querySelector('.player-name');
-                            if (nameElement) {
-                                nameElement.textContent = dbName || '';
-                            }
+                        playerData.name = '';
+                        const nameElement = playerData.element.querySelector('.player-name');
+                        if (nameElement) {
+                            nameElement.textContent = '';
                         }
                     });
+                    return;
                 }
+                
+                // Firebase 데이터를 화면에 반영
+                players.forEach(playerData => {
+                    const dbName = data[playerData.position];
+                    // undefined가 아닌 경우에만 업데이트 (빈 문자열 포함)
+                    if (dbName !== undefined) {
+                        playerData.name = dbName;
+                        const nameElement = playerData.element.querySelector('.player-name');
+                        if (nameElement) {
+                            nameElement.textContent = dbName;
+                        }
+                    }
+                });
             });
         }
 
@@ -849,10 +861,10 @@
             const name = document.getElementById('playerNameInput').value.trim();
             const playerData = players.find(p => p.element === currentEditingPlayer);
             
-            // Firebase에 저장
+            // Firebase에 저장 (빈 문자열도 그대로 저장)
             try {
                 const playerRef = ref(database, `lineup/${playerData.position}`);
-                await set(playerRef, name || null);
+                await set(playerRef, name);
                 
                 // 저장 성공 후 모달 닫기 (실시간 리스너가 자동으로 화면 업데이트)
                 closeModal();
