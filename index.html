@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Only Human 라인업 생성기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            padding: clamp(5px, 1vw, 10px);
+        }
+
+        .container {
+            max-width: 1400px;
+            min-height: calc(100vh - clamp(10px, 2vw, 20px));
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: clamp(10px, 1.5vw, 15px);
+            box-shadow: 0 1px 3px rgba(27,31,35,0.12), 0 8px 24px rgba(66,74,83,0.12);
+            border: 1px solid #d0d7de;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #f6f8fa;
+            color: #24292f;
+            padding: clamp(12px, 1.5vh, 15px) clamp(15px, 2vw, 20px);
+            text-align: center;
+            flex-shrink: 0;
+            border-bottom: 1px solid #d0d7de;
+        }
+
+        .header h1 {
+            font-size: clamp(1.1em, 2.5vw, 1.8em);
+            margin-bottom: clamp(3px, 0.5vh, 5px);
+            font-weight: 600;
+            color: #24292f;
+        }
+
+        .header p {
+            font-size: clamp(0.8em, 1.8vw, 0.95em);
+            opacity: 0.6;
+            font-weight: 400;
+            color: #57606a;
+        }
+
+        .main-content {
+            display: flex;
+            gap: clamp(10px, 1.5vw, 15px);
+            padding: clamp(10px, 1.5vw, 15px);
+            flex: 1;
+            min-height: 0;
+        }
+
+        .sidebar {
+            flex: 0 0 clamp(200px, 20vw, 250px);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(10px, 1.2vw, 12px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .control-panel {
+            background: #f6f8fa;
+            border-radius: clamp(8px, 1vw, 10px);
+            padding: clamp(12px, 1.5vw, 15px);
+            border: 1px solid #d0d7de;
+        }
+
+        .control-panel h3 {
+            margin-bottom: clamp(8px, 1.2vw, 12px);
+            color: #24292f;
+            font-size: clamp(0.95em, 1.8vw, 1.1em);
+            border-bottom: 1px solid #d0d7de;
+            padding-bottom: clamp(6px, 0.8vw, 8px);
+            font-weight: 600;
+        }
+
+        .formation-selector {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1vw, 10px);
+        }
+
+        .formation-select {
+            padding: clamp(10px, 1.2vw, 12px);
+            background: #ffffff;
+            border: 1px solid #d0d7de;
+            border-radius: clamp(6px, 0.8vw, 8px);
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            font-weight: 500;
+            color: #24292f;
+            transition: all 0.3s;
+        }
+
+        .formation-select:hover {
+            border-color: #0969da;
+            background: #f6f8fa;
+        }
+
+        .formation-select:focus {
+            outline: none;
+            border-color: #0969da;
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+        }
+
+        .formation-select option {
+            padding: clamp(8px, 1vw, 10px);
+            background: #ffffff;
+            color: #24292f;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1vw, 10px);
+        }
+
+        .action-btn {
+            padding: clamp(10px, 1.2vw, 12px);
+            border: none;
+            border-radius: clamp(6px, 0.8vw, 8px);
+            cursor: pointer;
+            font-size: clamp(0.85em, 1.5vw, 0.95em);
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .save-btn {
+            background: #1a7f37;
+            color: white;
+        }
+
+        .save-btn:hover {
+            background: #1f883d;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(26, 127, 55, 0.4);
+        }
+
+        .reset-btn {
+            background: #cf222e;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #a40e26;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(207, 34, 46, 0.4);
+        }
+
+        .field-container {
+            flex: 1;
+            position: relative;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .football-field {
+            width: 100%;
+            max-width: min(600px, 90vw);
+            height: 100%;
+            max-height: calc(100vh - clamp(180px, 25vh, 200px));
+            aspect-ratio: 7/10;
+            background: linear-gradient(to bottom, #4a7c59 0%, #4a7c59 50%, #5a8c69 50%, #5a8c69 100%);
+            border-radius: clamp(8px, 1vw, 10px);
+            position: relative;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            border: 2px solid rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* 필드 라인 */
+        .field-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .center-line {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: clamp(2px, 0.3vw, 3px);
+            transform: translateY(-50%);
+        }
+
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20%;
+            aspect-ratio: 1;
+            border: clamp(2px, 0.3vw, 3px) solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+
+        .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1.3%;
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+
+        .penalty-area-top, .penalty-area-bottom {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 15%;
+            border: clamp(2px, 0.3vw, 3px) solid rgba(255, 255, 255, 0.5);
+        }
+
+        .penalty-area-top {
+            top: 0;
+            border-top: none;
+        }
+
+        .penalty-area-bottom {
+            bottom: 0;
+            border-bottom: none;
+        }
+
+        .goal-area-top, .goal-area-bottom {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30%;
+            height: 8%;
+            border: clamp(2px, 0.3vw, 3px) solid rgba(255, 255, 255, 0.5);
+        }
+
+        .goal-area-top {
+            top: 0;
+            border-top: none;
+        }
+
+        .goal-area-bottom {
+            bottom: 0;
+            border-bottom: none;
+        }
+
+        .player {
+            position: absolute;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s;
+            transform: translate(-50%, -50%);
+        }
+
+        .player:hover .player-icon {
+            transform: scale(1.1);
+            z-index: 100;
+        }
+
+        .player-icon {
+            position: relative;
+            width: clamp(28px, 5vw, 40px);
+            height: clamp(28px, 5vw, 40px);
+            border-radius: 50%;
+            background: #3498db;
+            border: clamp(2.5px, 0.35vw, 3.5px) solid #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            color: #f5f5f5;
+            font-size: clamp(0.7em, 1.6vw, 0.95em);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            letter-spacing: -0.01em;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-text-size-adjust: none;
+            -moz-text-size-adjust: none;
+            -ms-text-size-adjust: none;
+            text-size-adjust: none;
+        }
+
+        .player-name {
+            position: absolute;
+            top: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #f5f5f5;
+            padding: 0.3em 0.5em;
+            border-radius: 3px;
+            font-size: clamp(0.7em, 1.8vw, 1em);
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: center;
+            line-height: 1;
+            pointer-events: none;
+            -webkit-text-size-adjust: none;
+            -moz-text-size-adjust: none;
+            -ms-text-size-adjust: none;
+            text-size-adjust: none;
+        }
+
+        .player-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            padding: clamp(20px, 3vw, 30px);
+            border-radius: clamp(12px, 1.5vw, 15px);
+            width: min(90%, 400px);
+            box-shadow: 0 8px 24px rgba(140,149,159,0.2);
+            border: 1px solid #d0d7de;
+        }
+
+        .modal-content h3 {
+            margin-bottom: clamp(15px, 2vw, 20px);
+            color: #24292f;
+            font-size: clamp(1.1em, 2vw, 1.3em);
+            font-weight: 600;
+        }
+
+        .modal-input-group {
+            margin-bottom: clamp(12px, 1.5vw, 15px);
+        }
+
+        .modal-input-group label {
+            display: block;
+            margin-bottom: clamp(4px, 0.5vw, 5px);
+            font-weight: 500;
+            color: #24292f;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .modal-input-group input {
+            width: 100%;
+            padding: clamp(8px, 1vw, 10px);
+            border: 1px solid #d0d7de;
+            border-radius: clamp(4px, 0.5vw, 5px);
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all 0.3s;
+            background: #ffffff;
+            color: #24292f;
+        }
+
+        .modal-input-group input:focus {
+            outline: none;
+            border-color: #0969da;
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: clamp(8px, 1vw, 10px);
+            margin-top: clamp(15px, 2vw, 20px);
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: clamp(10px, 1.2vw, 12px);
+            border: none;
+            border-radius: clamp(6px, 0.8vw, 8px);
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .modal-save {
+            background: #1a7f37;
+            color: white;
+        }
+
+        .modal-save:hover {
+            background: #1f883d;
+        }
+
+        .modal-cancel {
+            background: #f6f8fa;
+            color: #24292f;
+            border: 1px solid #d0d7de;
+        }
+
+        .modal-cancel:hover {
+            background: #f3f4f6;
+            border-color: #8c959f;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                flex: 0 0 auto;
+                order: 2;
+            }
+
+            .field-container {
+                flex: 0 0 auto;
+                order: 1;
+                min-height: min(85vh, 600px);
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 600px) {
+            body {
+                padding: 5px;
+            }
+
+            .header {
+                padding: 8px 15px;
+            }
+
+            .header h1 {
+                font-size: clamp(1em, 2vw, 1.3em);
+                margin-bottom: 2px;
+            }
+
+            .header p {
+                font-size: clamp(0.75em, 1.5vw, 0.85em);
+            }
+
+            .main-content {
+                padding: 8px;
+                gap: 8px;
+            }
+
+            .sidebar {
+                flex: 0 0 clamp(180px, 18vw, 220px);
+            }
+
+            .football-field {
+                max-height: calc(100vh - 140px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Only Human 라인업 생성기</h1>
+            <p>by BulgogiKimBab</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="control-panel">
+                    <h3>포메이션 선택</h3>
+                    <div class="formation-selector">
+                        <select class="formation-select" id="formationSelect">
+                            <!-- 자동 생성됨 -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-panel">
+                    <h3>텍스트 크기</h3>
+                    <div class="formation-selector">
+                        <select class="formation-select" id="textSizeSelect">
+                            <option value="small">작게</option>
+                            <option value="medium">중간</option>
+                            <option value="large" selected>크게</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-panel">
+                    <h3>작업</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn save-btn" onclick="saveFormation()">💾 저장</button>
+                        <button class="action-btn reset-btn" onclick="resetFormation()">🔄 리셋</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-container">
+                <div class="football-field" id="field">
+                    <!-- 필드 라인 -->
+                    <div class="field-line center-line"></div>
+                    <div class="center-circle"></div>
+                    <div class="center-dot"></div>
+                    <div class="penalty-area-top"></div>
+                    <div class="penalty-area-bottom"></div>
+                    <div class="goal-area-top"></div>
+                    <div class="goal-area-bottom"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 선수 편집 모달 -->
+    <div class="player-modal" id="playerModal">
+        <div class="modal-content">
+            <h3>선수 정보 수정</h3>
+            <div class="modal-input-group">
+                <label>선수 이름</label>
+                <input type="text" id="playerNameInput" placeholder="선수 이름 입력">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-save" onclick="savePlayerInfo()">저장</button>
+                <button class="modal-btn modal-cancel" onclick="closeModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase 초기화
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDy7zoCluiEUbF27yjh39E7kMngXrbN6Q",
+            authDomain: "onlyhuman-cbf51.firebaseapp.com",
+            databaseURL: "https://onlyhuman-cbf51-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "onlyhuman-cbf51",
+            storageBucket: "onlyhuman-cbf51.firebasestorage.app",
+            messagingSenderId: "511175500605",
+            appId: "1:511175500605:web:3bd2a6e93aba36af44db54",
+            measurementId: "G-QD5TCMLCT6"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // 포메이션 데이터: 각 포메이션별로 포지션 이름과 좌표를 직접 지정
+        const formationData = {
+            '3-5-2': [
+                { pos: 'GK', x: 0.50, y: 0.91 },
+                { pos: 'LCB', x: 0.15, y: 0.75 },
+                { pos: 'CB', x: 0.50, y: 0.75 },
+                { pos: 'RCB', x: 0.85, y: 0.75 },
+                { pos: 'LM', x: 0.15, y: 0.41 },
+                { pos: 'LDM', x: 0.30, y: 0.58 },
+                { pos: 'CAM', x: 0.50, y: 0.30 },
+                { pos: 'RDM', x: 0.70, y: 0.58 },
+                { pos: 'RM', x: 0.85, y: 0.41 },
+                { pos: 'LS', x: 0.30, y: 0.15 },
+                { pos: 'RS', x: 0.70, y: 0.15 }
+            ],
+            '4-2-3-1 (와이드)': [
+                { pos: 'GK', x: 0.50, y: 0.91 },
+                { pos: 'LB', x: 0.12, y: 0.70 },
+                { pos: 'CB', x: 0.35, y: 0.75 },
+                { pos: 'CB', x: 0.65, y: 0.75 },
+                { pos: 'RB', x: 0.88, y: 0.70 },
+                { pos: 'LDM', x: 0.25, y: 0.54 },
+                { pos: 'RDM', x: 0.75, y: 0.54 },
+                { pos: 'CAM', x: 0.50, y: 0.33 },
+                { pos: 'LM', x: 0.12, y: 0.33 },
+                { pos: 'ST', x: 0.50, y: 0.15 },
+                { pos: 'RM', x: 0.88, y: 0.33 }
+            ],
+            '4-3-3 (홀딩)': [
+                { pos: 'GK', x: 0.50, y: 0.91 },
+                { pos: 'LB', x: 0.12, y: 0.70 },
+                { pos: 'CB', x: 0.35, y: 0.75 },
+                { pos: 'CB', x: 0.65, y: 0.75 },
+                { pos: 'RB', x: 0.88, y: 0.70 },
+                { pos: 'CDM', x: 0.50, y: 0.58 },
+                { pos: 'CM', x: 0.25, y: 0.41 },
+                { pos: 'CM', x: 0.75, y: 0.41 },
+                { pos: 'LW', x: 0.12, y: 0.20 },
+                { pos: 'ST', x: 0.50, y: 0.15 },
+                { pos: 'RW', x: 0.88, y: 0.20 }
+            ],
+            '5-2-3': [
+                { pos: 'GK', x: 0.50, y: 0.91 },
+                { pos: 'LWB', x: 0.10, y: 0.63 },
+                { pos: 'LCB', x: 0.30, y: 0.75 },
+                { pos: 'CB', x: 0.50, y: 0.63 },
+                { pos: 'RCB', x: 0.70, y: 0.75 },
+                { pos: 'RWB', x: 0.90, y: 0.63 },
+                { pos: 'LCM', x: 0.30, y: 0.41 },
+                { pos: 'RCM', x: 0.70, y: 0.41 },
+                { pos: 'LW', x: 0.12, y: 0.20 },
+                { pos: 'ST', x: 0.50, y: 0.15 },
+                { pos: 'RW', x: 0.88, y: 0.20 }
+            ]
+        };
+
+        let currentFormation = '4-3-3 (홀딩)';
+        let players = [];
+        let currentEditingPlayer = null;
+
+        // 초기화
+        function init() {
+            setupFormationButtons();
+            setupTextSizeSelector();
+            createPlayers(currentFormation);
+            
+            // Firebase 실시간 리스너 설정
+            setupRealtimeListener();
+        }
+        
+        // Firebase 실시간 리스너 설정
+        function setupRealtimeListener() {
+            const lineupRef = ref(database, 'lineup');
+            
+            onValue(lineupRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    // Firebase 데이터를 화면에 반영
+                    players.forEach(playerData => {
+                        const dbName = data[playerData.position];
+                        if (dbName !== undefined) {
+                            playerData.name = dbName || '';
+                            const nameElement = playerData.element.querySelector('.player-name');
+                            if (nameElement) {
+                                nameElement.textContent = dbName || '';
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // 포메이션 버튼 설정
+        function setupFormationButtons() {
+            const formationSelect = document.getElementById('formationSelect');
+            
+            // 포메이션 데이터에서 옵션 그룹 생성
+            const formationGroups = {};
+            
+            Object.keys(formationData).forEach(formation => {
+                const firstDigit = formation.charAt(0);
+                const groupName = `${firstDigit}백`;
+                
+                if (!formationGroups[groupName]) {
+                    formationGroups[groupName] = [];
+                }
+                formationGroups[groupName].push(formation);
+            });
+            
+            // 옵션 그룹 추가
+            Object.keys(formationGroups).sort().forEach(groupName => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = groupName;
+                
+                formationGroups[groupName].forEach(formation => {
+                    const option = document.createElement('option');
+                    option.value = formation;
+                    option.textContent = formation;
+                    if (formation === currentFormation) {
+                        option.selected = true;
+                    }
+                    optgroup.appendChild(option);
+                });
+                
+                formationSelect.appendChild(optgroup);
+            });
+            
+            formationSelect.addEventListener('change', function() {
+                currentFormation = this.value;
+                createPlayers(currentFormation);
+            });
+        }
+
+        // 텍스트 크기 선택기 설정
+        function setupTextSizeSelector() {
+            const textSizeSelect = document.getElementById('textSizeSelect');
+            
+            textSizeSelect.addEventListener('change', function() {
+                applyTextSize(this.value);
+            });
+            
+            // 초기값 설정
+            applyTextSize('large');
+        }
+
+        // 텍스트 크기 적용 함수
+        function applyTextSize(size) {
+            const playerNames = document.querySelectorAll('.player-name');
+            
+            playerNames.forEach(nameElement => {
+                // 스타일을 초기화하여 CSS의 반응형 기본값 가져오기
+                nameElement.style.fontSize = '';
+                
+                // CSS의 clamp()로 설정된 기본 폰트 사이즈 가져오기
+                const computedStyle = window.getComputedStyle(nameElement);
+                const baseFontSize = parseFloat(computedStyle.fontSize);
+                
+                let multiplier;
+                if (size === 'small') {
+                    multiplier = 0.75; // 기본 크기의 75%
+                } else if (size === 'medium') {
+                    multiplier = 1.0; // 기본 크기 유지
+                } else if (size === 'large') {
+                    multiplier = 1.25; // 기본 크기의 125%
+                }
+                
+                nameElement.style.fontSize = (baseFontSize * multiplier) + 'px';
+            });
+        }
+
+        // 포지션별 색상 결정 (공격수=빨강, 미드필더=초록, 수비수=파랑, 골키퍼=주황)
+        function getPositionColor(positionKey) {
+            // 골키퍼
+            if (positionKey === 'GK') {
+                return '#ff8c00'; // 주황색 (Dark Orange)
+            }
+            
+            // 공격수 포지션
+            const attackerPositions = ['ST', 'CF', 'LW', 'RW', 'LS', 'RS'];
+            if (attackerPositions.includes(positionKey)) {
+                return '#dc143c'; // 빨간색 (Crimson)
+            }
+            
+            // 미드필더 포지션
+            const midfielderPositions = ['CM', 'CAM', 'CDM', 'LCM', 'RCM', 'LM', 'RM', 'LDM', 'RDM', 'LAM', 'RAM'];
+            if (midfielderPositions.includes(positionKey)) {
+                return '#28a745'; // 초록색 (부드러운 초록)
+            }
+            
+            // 수비수 포지션 (위에 해당하지 않는 모든 포지션)
+            return '#1e90ff'; // 파란색 (Dodger Blue - 선명한 파란색)
+        }
+
+        // 포지션 표시 문자열 생성 (3글자면 첫 글자 제거)
+        function getDisplayPosition(positionKey) {
+            if (positionKey.length === 3) {
+                return positionKey.substring(1); // 첫 글자 제거
+            }
+            return positionKey;
+        }
+
+        // 선수 생성
+        function createPlayers(formation) {
+            const field = document.getElementById('field');
+            // 기존 선수 제거
+            document.querySelectorAll('.player').forEach(p => p.remove());
+            players = [];
+
+            const positions = formationData[formation];
+            if (!positions) {
+                console.error(`Unknown formation: ${formation}`);
+                return;
+            }
+
+            positions.forEach((posData, index) => {
+                const player = document.createElement('div');
+                player.className = 'player' + (posData.pos === 'GK' ? ' goalkeeper' : '');
+                // 0~1 범위를 퍼센트로 변환
+                player.style.left = (posData.x * 100) + '%';
+                player.style.top = (posData.y * 100) + '%';
+
+                const playerColor = getPositionColor(posData.pos);
+                const displayPosition = getDisplayPosition(posData.pos);
+
+                player.innerHTML = `
+                    <div class="player-icon" style="background: ${playerColor}">
+                        ${displayPosition}
+                    </div>
+                    <div class="player-name"></div>
+                `;
+
+                // 클릭/터치로 선수 정보 편집
+                player.addEventListener('click', function() {
+                    openPlayerModal(player);
+                });
+                
+                player.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    openPlayerModal(player);
+                });
+
+                field.appendChild(player);
+                players.push({
+                    element: player,
+                    position: posData.pos,
+                    name: ''
+                });
+            });
+            
+            // 선수 생성 후 현재 선택된 텍스트 크기 적용
+            const textSizeSelect = document.getElementById('textSizeSelect');
+            if (textSizeSelect) {
+                applyTextSize(textSizeSelect.value);
+            }
+        }
+
+        // 선수 정보 편집 모달 열기
+        function openPlayerModal(playerElement) {
+            const modal = document.getElementById('playerModal');
+            const playerData = players.find(p => p.element === playerElement);
+            
+            currentEditingPlayer = playerElement;
+            const nameInput = document.getElementById('playerNameInput');
+            
+            nameInput.value = playerData.name;
+            
+            modal.classList.add('active');
+            
+            // 모달이 열린 후 포커스 설정
+            setTimeout(() => {
+                nameInput.focus();
+                nameInput.select(); // 기존 텍스트 전체 선택
+            }, 100);
+        }
+
+        // 모달 키보드 이벤트 처리
+        function handleModalKeyPress(e) {
+            const modal = document.getElementById('playerModal');
+            if (!modal.classList.contains('active')) return;
+            
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                savePlayerInfo();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeModal();
+            }
+        }
+
+        // 선수 정보 저장
+        async function savePlayerInfo() {
+            const name = document.getElementById('playerNameInput').value.trim();
+            const playerData = players.find(p => p.element === currentEditingPlayer);
+            
+            // Firebase에 저장
+            try {
+                const playerRef = ref(database, `lineup/${playerData.position}`);
+                await set(playerRef, name || null);
+                
+                // 저장 성공 후 모달 닫기 (실시간 리스너가 자동으로 화면 업데이트)
+                closeModal();
+            } catch (error) {
+                console.error('저장 중 오류:', error);
+                alert('저장 중 오류가 발생했습니다.');
+            }
+        }
+        window.savePlayerInfo = savePlayerInfo;
+
+        // 모달 닫기
+        function closeModal() {
+            const modal = document.getElementById('playerModal');
+            modal.classList.remove('active');
+            currentEditingPlayer = null;
+        }
+        window.closeModal = closeModal;
+
+        // 포메이션 저장 (클립보드에 이미지 복사)
+        async function saveFormation() {
+            try {
+                const field = document.getElementById('field');
+                
+                // html-to-image 라이브러리를 동적으로 로드
+                if (typeof htmlToImage === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js';
+                    document.head.appendChild(script);
+                    
+                    await new Promise((resolve, reject) => {
+                        script.onload = resolve;
+                        script.onerror = reject;
+                    });
+                }
+                
+                // 필드를 blob으로 변환 (html-to-image는 스타일을 자동으로 정확히 캡처)
+                const blob = await htmlToImage.toBlob(field, {
+                    pixelRatio: 3, // 고해상도
+                    backgroundColor: '#4a7c59'
+                });
+                
+                try {
+                    // 1. 클립보드 복사 시도 (이미지)
+                    if (!navigator.clipboard || !navigator.clipboard.write) {
+                        throw new Error('Clipboard API 미지원');
+                    }
+
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+
+                    alert('✅ 포메이션이 클립보드에 복사되었습니다!\n\n붙여넣기(Ctrl+V 또는 길게 누르고 붙여넣기)로 사용하세요.');
+                } catch (err) {
+                    console.warn('클립보드 복사 실패:', err);
+
+                    // 2. 모바일 공유 API 지원 시 → 공유로 폴백
+                    if (navigator.share) {
+                        const file = new File([blob], `formation-${Date.now()}.png`, { type: 'image/png' });
+                        await navigator.share({
+                            files: [file],
+                            title: 'Formation Image',
+                            text: '포메이션 이미지'
+                        });
+                        return; // 공유 성공 시 종료
+                    }
+                }
+                
+            } catch (error) {
+                console.error('포메이션 저장 실패:', error);
+                alert('❌ 포메이션 저장에 실패했습니다.\n다시 시도해주세요.');
+            }
+        }
+        window.saveFormation = saveFormation;
+
+        // 초기화
+        async function resetFormation() {
+            if (!confirm('포메이션을 초기화하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                // Firebase의 모든 데이터 제거
+                const lineupRef = ref(database, 'lineup');
+                await set(lineupRef, null);
+                
+                alert('✅ 포메이션이 초기화되었습니다.');
+            } catch (error) {
+                console.error('초기화 중 오류:', error);
+                alert('초기화 중 오류가 발생했습니다.');
+            }
+        }
+        window.resetFormation = resetFormation;
+
+        // 페이지 로드시 초기화
+        window.addEventListener('DOMContentLoaded', init);
+
+        // 화면 크기 변경 시 텍스트 크기 재계산
+        window.addEventListener('resize', function() {
+            const textSizeSelect = document.getElementById('textSizeSelect');
+            if (textSizeSelect && players.length > 0) {
+                applyTextSize(textSizeSelect.value);
+            }
+        });
+
+        // 키보드 이벤트 리스너 추가
+        document.addEventListener('keydown', handleModalKeyPress);
+
+        // 모달 배경 클릭시 닫기
+        document.getElementById('playerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
