@@ -878,11 +878,19 @@
             
             modal.classList.add('active');
             
-            // 모달이 열린 후 포커스 설정
+            // 모달이 열린 후 포커스 설정 (더 긴 지연과 강제 포커스)
             setTimeout(() => {
                 nameInput.focus();
                 nameInput.select(); // 기존 텍스트 전체 선택
             }, 100);
+            
+            // 추가 포커스 시도 (첫 로드 시 실패 방지)
+            setTimeout(() => {
+                if (document.activeElement !== nameInput) {
+                    nameInput.focus();
+                    nameInput.select();
+                }
+            }, 300);
         }
 
         // 모달 키보드 이벤트 처리
