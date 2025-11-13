@@ -1006,7 +1006,7 @@
                 }
             } catch (error) {
                 console.error('포메이션 저장 실패:', error);
-                alert('❌ 포메이션 저장에 실패했습니다.\n' + error.message);
+                alert('❌ 포메이션 저장에 실패했습니다\n' + error.message);
             }
         }
         window.saveFormation = saveFormation;
@@ -1022,10 +1022,10 @@
                 const lineupRef = ref(database, 'lineup');
                 await set(lineupRef, null);
                 
-                alert('✅ 포메이션이 초기화되었습니다.');
+                alert('포메이션이 초기화되었습니다');
             } catch (error) {
                 console.error('초기화 중 오류:', error);
-                alert('초기화 중 오류가 발생했습니다.');
+                alert('초기화 중 오류가 발생했습니다');
             }
         }
         window.resetFormation = resetFormation;
