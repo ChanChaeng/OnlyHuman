@@ -878,19 +878,21 @@
             
             modal.classList.add('active');
             
-            // 모달이 열린 후 포커스 설정 (더 긴 지연과 강제 포커스)
-            setTimeout(() => {
-                nameInput.focus();
-                nameInput.select(); // 기존 텍스트 전체 선택
-            }, 100);
-            
-            // 추가 포커스 시도 (첫 로드 시 실패 방지)
-            setTimeout(() => {
-                if (document.activeElement !== nameInput) {
+            // 모달이 완전히 렌더링된 후 포커스 (브라우저 렌더링 사이클 활용)
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
                     nameInput.focus();
                     nameInput.select();
-                }
-            }, 300);
+                    
+                    // 모바일/네트워크 지연 대비 추가 시도
+                    setTimeout(() => {
+                        if (document.activeElement !== nameInput) {
+                            nameInput.focus();
+                            nameInput.select();
+                        }
+                    }, 200);
+                });
+            });
         }
 
         // 모달 키보드 이벤트 처리
