@@ -977,7 +977,8 @@
                 });
 
                 // 1. 모바일 공유 API 지원 시 → 공유로 폴백
-                if (navigator.share) {
+                const isTouchDevice = (navigator.maxTouchPoints || 'ontouchstart' in document.documentElement);
+                if (isTouchDevice && navigator.share) {
                     try {
                         const file = new File([blob], `formation-${Date.now()}.png`, { type: 'image/png' });
                         await navigator.share({
