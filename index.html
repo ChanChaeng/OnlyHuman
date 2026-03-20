@@ -403,6 +403,72 @@
             box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
         }
 
+        /* 토글 스위치 설정 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .toggle-switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #d0d7de;
+            transition: .3s;
+            border-radius: 26px;
+        }
+
+        .toggle-switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch input:checked+.slider {
+            background-color: #e1ad01;
+        }
+
+        .toggle-switch input:checked+.slider:before {
+            transform: translateX(22px);
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: clamp(8px, 1vw, 10px) 0;
+        }
+
+        .toggle-group label.toggle-label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: #24292f;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            flex: 1;
+        }
+
         .modal-buttons {
             display: flex;
             gap: clamp(8px, 1vw, 10px);
@@ -552,9 +618,13 @@
                 <label>선수 이름</label>
                 <input type="text" id="playerNameInput" placeholder="선수 이름 입력">
             </div>
-            <div class="modal-input-group" style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="playerUncertainCheckbox" style="width: auto; margin: 0; padding: 0;">
-                <label for="playerUncertainCheckbox" style="margin: 0; cursor: pointer;">참여 미정</label>
+            <div class="modal-input-group toggle-group"
+                onclick="document.getElementById('playerUncertainCheckbox').click();">
+                <label class="toggle-label">참여 미정</label>
+                <label class="toggle-switch" onclick="event.stopPropagation();">
+                    <input type="checkbox" id="playerUncertainCheckbox">
+                    <span class="slider"></span>
+                </label>
             </div>
             <div class="modal-buttons">
                 <button class="modal-btn modal-save" onclick="savePlayerInfo()">저장</button>
