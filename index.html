@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -27,7 +28,7 @@
             margin: 0 auto;
             background: #ffffff;
             border-radius: clamp(10px, 1.5vw, 15px);
-            box-shadow: 0 1px 3px rgba(27,31,35,0.12), 0 8px 24px rgba(66,74,83,0.12);
+            box-shadow: 0 1px 3px rgba(27, 31, 35, 0.12), 0 8px 24px rgba(66, 74, 83, 0.12);
             border: 1px solid #d0d7de;
             overflow: hidden;
             display: flex;
@@ -181,8 +182,8 @@
             background: linear-gradient(to bottom, #4a7c59 0%, #4a7c59 50%, #5a8c69 50%, #5a8c69 100%);
             border-radius: clamp(8px, 1vw, 10px);
             position: relative;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-            border: 2px solid rgba(0,0,0,0.08);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+            border: 2px solid rgba(0, 0, 0, 0.08);
             overflow: hidden;
         }
 
@@ -222,7 +223,8 @@
             border-radius: 50%;
         }
 
-        .penalty-area-top, .penalty-area-bottom {
+        .penalty-area-top,
+        .penalty-area-bottom {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
@@ -241,7 +243,8 @@
             border-bottom: none;
         }
 
-        .goal-area-top, .goal-area-bottom {
+        .goal-area-top,
+        .goal-area-bottom {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
@@ -287,7 +290,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
             color: #f5f5f5;
             font-size: clamp(0.7em, 1.6vw, 0.95em);
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
             letter-spacing: -0.01em;
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
@@ -296,6 +299,25 @@
             -moz-text-size-adjust: none;
             -ms-text-size-adjust: none;
             text-size-adjust: none;
+        }
+
+        .uncertain-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: clamp(14px, 2.5vw, 18px);
+            height: clamp(14px, 2.5vw, 18px);
+            background: #e1ad01;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(0.65em, 1.2vw, 0.8em);
+            font-weight: 700;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            border: 1px solid #fff;
+            z-index: 10;
         }
 
         .player-name {
@@ -341,7 +363,7 @@
             padding: clamp(20px, 3vw, 30px);
             border-radius: clamp(12px, 1.5vw, 15px);
             width: min(90%, 400px);
-            box-shadow: 0 8px 24px rgba(140,149,159,0.2);
+            box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
             border: 1px solid #d0d7de;
         }
 
@@ -468,6 +490,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -529,6 +552,10 @@
                 <label>선수 이름</label>
                 <input type="text" id="playerNameInput" placeholder="선수 이름 입력">
             </div>
+            <div class="modal-input-group" style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="playerUncertainCheckbox" style="width: auto; margin: 0; padding: 0;">
+                <label for="playerUncertainCheckbox" style="margin: 0; cursor: pointer;">참여 미정</label>
+            </div>
             <div class="modal-buttons">
                 <button class="modal-btn modal-save" onclick="savePlayerInfo()">저장</button>
                 <button class="modal-btn modal-cancel" onclick="closeModal()">취소</button>
@@ -540,7 +567,7 @@
         // Firebase 초기화
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
         import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-        
+
         const firebaseConfig = {
             apiKey: "AIzaSyCDy7zoCluiEUbF27yjh39E7kMngXrbN6Q",
             authDomain: "onlyhuman-cbf51.firebaseapp.com",
@@ -551,7 +578,7 @@
             appId: "1:511175500605:web:3bd2a6e93aba36af44db54",
             measurementId: "G-QD5TCMLCT6"
         };
-        
+
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
@@ -633,67 +660,91 @@
             setupFormationButtons();
             setupTextSizeSelector();
             createPlayers(currentFormation);
-            
+
             // Firebase 실시간 리스너 설정
             setupRealtimeListener();
         }
-        
+
         // Firebase 실시간 리스너 설정
         function setupRealtimeListener() {
             const lineupRef = ref(database, 'lineup');
-            
+
             onValue(lineupRef, (snapshot) => {
                 const data = snapshot.val();
-                
+
                 // 데이터가 없으면 모든 선수 이름 초기화
                 if (!data) {
                     players.forEach(playerData => {
                         playerData.name = '';
+                        playerData.isUncertain = false;
                         const nameElement = playerData.element.querySelector('.player-name');
-                        if (nameElement) {
-                            nameElement.textContent = '';
-                        }
+                        if (nameElement) nameElement.innerHTML = '';
                     });
                     return;
                 }
-                
+
                 // Firebase 데이터를 화면에 반영
                 players.forEach(playerData => {
-                    const dbName = data[playerData.position];
-                    // undefined가 아닌 경우에만 업데이트 (빈 문자열 포함)
-                    if (dbName !== undefined) {
+                    const dbValue = data[playerData.position];
+                    if (dbValue !== undefined) {
+                        let dbName = '';
+                        let dbUncertain = false;
+
+                        if (typeof dbValue === 'object' && dbValue !== null) {
+                            dbName = dbValue.name || '';
+                            dbUncertain = dbValue.isUncertain || false;
+                        } else {
+                            dbName = String(dbValue);
+                        }
+
                         playerData.name = dbName;
+                        playerData.isUncertain = dbUncertain;
+
                         const nameElement = playerData.element.querySelector('.player-name');
                         if (nameElement) {
-                            nameElement.textContent = dbName;
+                            nameElement.innerHTML = dbName ? (dbName + (dbUncertain ? '<div class="uncertain-badge">?</div>' : '')) : '';
                         }
                     }
                 });
+            });
+
+            // 포메이션 실시간 동기화
+            const formationRef = ref(database, 'formation');
+            onValue(formationRef, (snapshot) => {
+                const formation = snapshot.val();
+                if (formation && formation !== currentFormation) {
+                    currentFormation = formation;
+                    const formationSelect = document.getElementById('formationSelect');
+                    if (formationSelect) {
+                        formationSelect.value = formation;
+                    }
+                    createPlayers(formation);
+                }
             });
         }
 
         // 포메이션 버튼 설정
         function setupFormationButtons() {
             const formationSelect = document.getElementById('formationSelect');
-            
+
             // 포메이션 데이터에서 옵션 그룹 생성
             const formationGroups = {};
-            
+
             Object.keys(formationData).forEach(formation => {
                 const firstDigit = formation.charAt(0);
                 const groupName = `${firstDigit}백`;
-                
+
                 if (!formationGroups[groupName]) {
                     formationGroups[groupName] = [];
                 }
                 formationGroups[groupName].push(formation);
             });
-            
+
             // 옵션 그룹 추가
             Object.keys(formationGroups).sort().forEach(groupName => {
                 const optgroup = document.createElement('optgroup');
                 optgroup.label = groupName;
-                
+
                 formationGroups[groupName].forEach(formation => {
                     const option = document.createElement('option');
                     option.value = formation;
@@ -703,24 +754,28 @@
                     }
                     optgroup.appendChild(option);
                 });
-                
+
                 formationSelect.appendChild(optgroup);
             });
-            
-            formationSelect.addEventListener('change', function() {
+
+            formationSelect.addEventListener('change', function () {
                 currentFormation = this.value;
                 createPlayers(currentFormation);
+
+                // 실시간 포메이션 공유
+                const formationRef = ref(database, 'formation');
+                set(formationRef, currentFormation).catch(err => console.error('포메이션 저장 실패:', err));
             });
         }
 
         // 텍스트 크기 선택기 설정
         function setupTextSizeSelector() {
             const textSizeSelect = document.getElementById('textSizeSelect');
-            
-            textSizeSelect.addEventListener('change', function() {
+
+            textSizeSelect.addEventListener('change', function () {
                 applyTextSize(this.value);
             });
-            
+
             // 초기값 설정
             applyTextSize('large');
         }
@@ -728,15 +783,15 @@
         // 텍스트 크기 적용 함수
         function applyTextSize(size) {
             const playerNames = document.querySelectorAll('.player-name');
-            
+
             playerNames.forEach(nameElement => {
                 // 스타일을 초기화하여 CSS의 반응형 기본값 가져오기
                 nameElement.style.fontSize = '';
-                
+
                 // CSS의 clamp()로 설정된 기본 폰트 사이즈 가져오기
                 const computedStyle = window.getComputedStyle(nameElement);
                 const baseFontSize = parseFloat(computedStyle.fontSize);
-                
+
                 let multiplier;
                 if (size === 'small') {
                     multiplier = 0.75; // 기본 크기의 75%
@@ -745,7 +800,7 @@
                 } else if (size === 'large') {
                     multiplier = 1.25; // 기본 크기의 125%
                 }
-                
+
                 nameElement.style.fontSize = (baseFontSize * multiplier) + 'px';
             });
         }
@@ -756,19 +811,19 @@
             if (positionKey === 'GK') {
                 return '#ff8c00'; // 주황색 (Dark Orange)
             }
-            
+
             // 공격수 포지션
             const attackerPositions = ['ST', 'CF', 'LW', 'RW', 'LS', 'RS'];
             if (attackerPositions.includes(positionKey)) {
                 return '#dc143c'; // 빨간색 (Crimson)
             }
-            
+
             // 미드필더 포지션
             const midfielderPositions = ['CM', 'CAM', 'CDM', 'LCM', 'RCM', 'LM', 'RM', 'LDM', 'RDM', 'LAM', 'RAM'];
             if (midfielderPositions.includes(positionKey)) {
                 return '#28a745'; // 초록색 (부드러운 초록)
             }
-            
+
             // 수비수 포지션 (위에 해당하지 않는 모든 포지션)
             return '#1e90ff'; // 파란색 (Dodger Blue - 선명한 파란색)
         }
@@ -786,13 +841,13 @@
             const field = document.getElementById('field');
             // 기존 선수 제거
             document.querySelectorAll('.player').forEach(p => p.remove());
-            
+
             // 기존 선수 데이터 백업
             const oldPlayers = {};
             players.forEach(p => {
-                oldPlayers[p.position] = p.name;
+                oldPlayers[p.position] = { name: p.name, isUncertain: p.isUncertain };
             });
-            
+
             players = [];
 
             const positions = formationData[formation];
@@ -819,57 +874,69 @@
                 `;
 
                 // 클릭/터치로 선수 정보 편집
-                player.addEventListener('click', function() {
+                player.addEventListener('click', function () {
                     openPlayerModal(player);
                 });
-                
-                player.addEventListener('touchend', function(e) {
+
+                player.addEventListener('touchend', function (e) {
                     e.preventDefault();
                     openPlayerModal(player);
                 });
 
                 field.appendChild(player);
-                
-                // 기존 데이터 또는 빈 문자열로 초기화
-                const existingName = oldPlayers[posData.pos] || '';
+
+                // 기존 데이터 초기화 (객체 고려)
+                const existingData = oldPlayers[posData.pos] || { name: '', isUncertain: false };
                 players.push({
                     element: player,
                     position: posData.pos,
-                    name: existingName
+                    name: existingData.name,
+                    isUncertain: existingData.isUncertain
                 });
-                
-                // 기존 이름이 있으면 표시
-                if (existingName) {
-                    const nameElement = player.querySelector('.player-name');
-                    nameElement.textContent = existingName;
+
+                // 기존 명단 및 뱃지 표시
+                const nameElement = player.querySelector('.player-name');
+                if (nameElement) {
+                    nameElement.innerHTML = existingData.name ? (existingData.name + (existingData.isUncertain ? '<div class="uncertain-badge">?</div>' : '')) : '';
                 }
             });
-            
+
             // 선수 생성 후 현재 선택된 텍스트 크기 적용
             const textSizeSelect = document.getElementById('textSizeSelect');
             if (textSizeSelect) {
                 applyTextSize(textSizeSelect.value);
             }
-            
+
             // Firebase에서 최신 데이터 가져오기
             await syncWithFirebase();
         }
-        
+
         // Firebase와 동기화
         async function syncWithFirebase() {
             try {
                 const lineupRef = ref(database, 'lineup');
                 const snapshot = await get(lineupRef);
                 const data = snapshot.val();
-                
+
                 if (data) {
                     players.forEach(playerData => {
-                        const dbName = data[playerData.position];
-                        if (dbName !== undefined) {
+                        const dbValue = data[playerData.position];
+                        if (dbValue !== undefined) {
+                            let dbName = '';
+                            let dbUncertain = false;
+                            if (typeof dbValue === 'object' && dbValue !== null) {
+                                dbName = dbValue.name || '';
+                                dbUncertain = dbValue.isUncertain || false;
+                            } else {
+                                dbName = String(dbValue);
+                            }
+
                             playerData.name = dbName;
+                            playerData.isUncertain = dbUncertain;
+
                             const nameElement = playerData.element.querySelector('.player-name');
                             if (nameElement) {
-                                nameElement.textContent = dbName;
+                                nameElement.innerHTML = dbName ? (dbName + (dbUncertain ? '<div class="uncertain-badge">?</div>' : '')) : '';
                             }
                         }
                     });
@@ -883,12 +950,16 @@
         function openPlayerModal(playerElement) {
             const modal = document.getElementById('playerModal');
             const playerData = players.find(p => p.element === playerElement);
-            
+
             currentEditingPlayer = playerElement;
             const nameInput = document.getElementById('playerNameInput');
-            
-            nameInput.value = playerData.name;
-            
+            const uncertainCheckbox = document.getElementById('playerUncertainCheckbox');
+
+            nameInput.value = playerData.name || '';
+            if (uncertainCheckbox) {
+                uncertainCheckbox.checked = playerData.isUncertain || false;
+            }
+
             // 1. 모달을 활성화
             modal.classList.add('active');
 
@@ -900,7 +971,7 @@
             // 50ms마다 포커스 상태를 확인할 인터벌 시작
             const focusInterval = setInterval(() => {
                 attemptCount++;
-            
+
                 // 포커스와 선택 시도
                 nameInput.focus();
 
@@ -909,7 +980,7 @@
                     // 성공 시: 인터벌 종료 및 텍스트 선택(select)
                     nameInput.select();
                     clearInterval(focusInterval);
-                } 
+                }
                 // 3. 실패(최대 시도 횟수 초과)했는지 확인
                 else if (attemptCount >= maxAttempts) {
                     // 실패 시: 무한 루프 방지를 위해 인터벌 종료
@@ -918,7 +989,7 @@
                 }
 
                 // (참고: 아직 시도 횟수가 남았고 포커스도 안됐으면 다음 15ms 후에 다시 시도)
-            
+
             }, 15); // 15ms (0.015초) 간격으로 확인
         }
 
@@ -926,7 +997,7 @@
         function handleModalKeyPress(e) {
             const modal = document.getElementById('playerModal');
             if (!modal.classList.contains('active')) return;
-            
+
             if (e.key === 'Enter') {
                 e.preventDefault();
                 savePlayerInfo();
@@ -939,13 +1010,18 @@
         // 선수 정보 저장
         async function savePlayerInfo() {
             const name = document.getElementById('playerNameInput').value.trim();
+            const uncertainCheckbox = document.getElementById('playerUncertainCheckbox');
+            const isUncertain = uncertainCheckbox ? uncertainCheckbox.checked : false;
             const playerData = players.find(p => p.element === currentEditingPlayer);
-            
-            // Firebase에 저장 (빈 문자열도 그대로 저장)
+
+            // Firebase에 저장 (객체 형태로)
             try {
                 const playerRef = ref(database, `lineup/${playerData.position}`);
-                await set(playerRef, name);
-                
+                await set(playerRef, {
+                    name: name,
+                    isUncertain: isUncertain
+                });
+
                 // 저장 성공 후 모달 닫기 (실시간 리스너가 자동으로 화면 업데이트)
                 closeModal();
             } catch (error) {
@@ -967,22 +1043,22 @@
         async function saveFormation() {
             try {
                 const field = document.getElementById('field');
-                
+
                 // html-to-image 라이브러리를 동적으로 로드
                 if (typeof window.htmlToImage === 'undefined') {
                     const script = document.createElement('script');
                     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js';
                     document.head.appendChild(script);
-                    
+
                     await new Promise((resolve, reject) => {
                         script.onload = resolve;
                         script.onerror = reject;
                     });
-                    
+
                     // 라이브러리 로드 후 약간 대기
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
-                
+
                 // 필드를 blob으로 변환
                 const blob = await window.htmlToImage.toBlob(field, {
                     pixelRatio: 3, // 고해상도
@@ -1004,7 +1080,7 @@
                         console.warn('공유 실패:', shareErr);
                     }
                 }
-                
+
                 try {
                     // 2. 클립보드 복사 시도 (이미지)
                     if (navigator.clipboard && navigator.clipboard.write) {
@@ -1026,16 +1102,16 @@
 
         // 초기화
         async function resetFormation() {
-            if (!confirm('포메이션을 초기화하시겠습니까?')) {
+            if (!confirm('선수 명단을 초기화하시겠습니까?')) {
                 return;
             }
-            
+
             try {
                 // Firebase의 모든 데이터 제거
                 const lineupRef = ref(database, 'lineup');
                 await set(lineupRef, null);
-                
-                alert('포메이션이 초기화되었습니다');
+
+                alert('선수 명단이 초기화되었습니다');
             } catch (error) {
                 console.error('초기화 중 오류:', error);
                 alert('초기화 중 오류가 발생했습니다');
@@ -1047,7 +1123,7 @@
         window.addEventListener('DOMContentLoaded', init);
 
         // 화면 크기 변경 시 텍스트 크기 재계산
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             const textSizeSelect = document.getElementById('textSizeSelect');
             if (textSizeSelect && players.length > 0) {
                 applyTextSize(textSizeSelect.value);
@@ -1058,11 +1134,12 @@
         document.addEventListener('keydown', handleModalKeyPress);
 
         // 모달 배경 클릭시 닫기
-        document.getElementById('playerModal').addEventListener('click', function(e) {
+        document.getElementById('playerModal').addEventListener('click', function (e) {
             if (e.target === this) {
                 closeModal();
             }
         });
     </script>
 </body>
+
 </html>
